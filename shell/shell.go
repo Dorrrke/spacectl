@@ -15,7 +15,7 @@ func Start() {
 	)
 
 	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       ">>",
+		Prompt:       ">> ",
 		HistoryFile:  "/tmp/readline.tmp",
 		AutoComplete: completer,
 	})
