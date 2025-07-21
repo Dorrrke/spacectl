@@ -5,41 +5,50 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Dorrrke/spacectl/cmd"
-	"github.com/chzyer/readline"
+	"github.com/c-bata/go-prompt"
 )
 
+var currentDir string
+
 func Start() {
-	completer := readline.NewPrefixCompleter(
-		readline.PcItem("reboot", readline.PcItem("agent"), readline.PcItem("glint")),
-	)
+	loadConfig()
+	loadAliases()
+	initCommands()
 
-	rl, err := readline.NewEx(&readline.Config{
-		Prompt:       ">> ",
-		HistoryFile:  "/tmp/readline.tmp",
-		AutoComplete: completer,
-	})
-
+	var err error
+	currentDir, err = os.Getwd()
 	if err != nil {
 		panic(err)
 	}
 
-	defer rl.Close()
+	p := prompt.New(
+		executor,
+		completer,
+		prompt.OptionPrefix(getPromt()),
+		prompt.OptionTitle("spacectl"),
+	)
+	p.Run()
+}
 
-	for {
-		line, err := rl.Readline()
-		if err != nil {
-			break
-		}
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
+func getPromt() string {
+	return fmt.Sprintf("\033[1;32m%s\033[0m > ", currentDir)
+}
 
-		args := strings.Fields(line)
-		cmd.RootCmd.SetArgs(args)
-		if err := cmd.RootCmd.Execute(); err != nil {
-			fmt.Fprint(os.Stderr, "Ошибка: ", err, "\n")
-		}
+func executor(input string) {
+	input = strings.TrimSpace(input)
+	if input == "" {
+		return
+	}
+
+	args := strings.Split(input, " ")
+	command := args[0]
+	params := args[1:]
+
+	runCommand(command, params)
+
+	var err error
+	currentDir, err = os.Getwd()
+	if err != nil {
+		panic(err)
 	}
 }
